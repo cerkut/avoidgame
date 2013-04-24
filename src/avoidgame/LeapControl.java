@@ -80,9 +80,9 @@ class SampleListener extends Listener {
 				float z = (float) avgPos.getZ();
 
 				if (!myGame.gameOver) {
-					myGame.leapUpdatePlayer(x, y);
+					myGame.movePlayer(x, y);
 					if (z <= -120) {
-						myGame.leapLaser();
+						myGame.shootLaser();
 					} else {
 						myGame.stopShootLaser();
 					}
