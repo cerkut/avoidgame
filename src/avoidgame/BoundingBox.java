@@ -30,8 +30,8 @@ public class BoundingBox {
 		return x > left && x < right;
 	}
 
-	public boolean inVerticalRange(float x) {
-		return x > top && x < bottom;
+	public boolean inVerticalRange(float y) {
+		return y > top && y < bottom;
 	}
 
 	public boolean inRange(BoundingBox r) {

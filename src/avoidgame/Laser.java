@@ -16,9 +16,11 @@ public class Laser {
 	}
 
 	public boolean isDepleted() {
-		return energy <= 0;
+		return energy == 0;
 	}
-
+	public boolean canFire(){
+		return energy > 20; 
+	}
 	public void deplete() {
 		energy = Math.max(energy - 4, 0);
 	}

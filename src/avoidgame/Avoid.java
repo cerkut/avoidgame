@@ -53,7 +53,7 @@ public class Avoid extends BasicGame implements KeyListener {
 	boolean gameOver = true, menu = true, inGame, resuming;
 
 	// Draws bounding boxes if true=========================
-	boolean diagnostics = false;
+	boolean diagnostics = true;
 
 	// Mouse Control (for testing)=============================
 	boolean mouse = true;
@@ -285,7 +285,7 @@ public class Avoid extends BasicGame implements KeyListener {
 
 	// This shoots a laser
 	public void shootLaser() {
-		if (laser.getEnergy() > 20 && !laserFiring) {
+		if (laser.canFire() && !laserFiring) {
 			laserFiring = true;
 			startLaserCountdown();
 		}

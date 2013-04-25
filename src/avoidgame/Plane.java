@@ -23,8 +23,8 @@ public class Plane {
 		float bodyTop = y + height;
 		float bodyBottom = y;
 		// Wing (enemy=>Top Half player=>Bottom Half)
-		float wingBottom = (enemy) ? y + 50 : y + height / 2;
-		float wingTop = (enemy) ? y + height / 2 : y + height;
+		float wingBottom = (enemy) ? y + 10 : y + height / 2;
+		float wingTop = (enemy) ? y + height / 2 : y + height-10;
 
 		body = new BoundingBox(bodyLeft, bodyRight, bodyBottom, bodyTop);
 		wings = new BoundingBox(wingLeft, wingRight, wingBottom, wingTop);
@@ -40,7 +40,7 @@ public class Plane {
 		this.x = x;
 		this.y = y;
 		body.update(x + width / 2 - 5, x + width / 2 + 5, y, y + height);
-		wings.update(x, x + width, y + height / 2, y + height - 20);
+		wings.update(x, x + width, y + height / 2, y + height - 10);
 
 	}
 
@@ -49,6 +49,6 @@ public class Plane {
 		this.y = y;
 		this.speed = speed;
 		body.update(x + width / 2 - 5, x + width / 2 + 5, y, y + height);
-		wings.update(x, x + width, y + 20, y + height / 2);
+		wings.update(x, x + width, y + 10, y + height / 2);
 	}
 }
