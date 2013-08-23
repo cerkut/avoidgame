@@ -13,8 +13,8 @@ public class Game {
 		int x = width;
 		planes = new ArrayList<Plane>();
 		for (int i = 0; i < numPlanes; i++) {
-			planes.add(new Plane(x, -height, width, height, genSpeed(), true));
-			x += width * 2 + 50;
+			planes.add(new Plane(genLocation(), -height, width, height,
+					genSpeed(), true));
 		}
 	}
 

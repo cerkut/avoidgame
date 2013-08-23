@@ -1,7 +1,6 @@
 package avoidgame;
 
 import java.util.prefs.Preferences;
-
 import org.lwjgl.opengl.Display;
 import org.newdawn.slick.AppGameContainer;
 import org.newdawn.slick.BasicGame;
@@ -53,10 +52,10 @@ public class Avoid extends BasicGame implements KeyListener {
 	boolean gameOver = true, menu = true, inGame, resuming;
 
 	// Draws bounding boxes if true=========================
-	boolean diagnostics = true;
+	boolean diagnostics;
 
 	// Mouse Control (for testing)=============================
-	boolean mouse = true;
+	boolean mouse;
 
 	// Lasers=================================================
 	// laser object
@@ -103,113 +102,13 @@ public class Avoid extends BasicGame implements KeyListener {
 	private int inGameOptionsWidth, countdownTimeWidth, gameOverMessageWidth,
 			highScoreMessageWidth;
 
-	public Avoid(String title) {
+	public Avoid(String title, boolean leap, boolean diagnose) {
 		super(title);
 		// Initialize preferences for high score
 		prefs = Preferences.userRoot().node(this.getClass().getName());
-	}
+		mouse = (leap) ? false : true;
+		diagnostics = diagnose;
 
-	@Override
-	public void render(GameContainer gc, Graphics g) throws SlickException {
-		// Draw paused screen
-		if (paused) {
-			renderPause(gc, g);
-		}
-		// Draw the game
-		else if (inGame) {
-			renderGame(gc, g);
-		}
-		// Draw the menu
-		else if (menu) {
-			renderMenu(gc, g);
-		}
-		// Limit to 60 fps
-		Display.sync(60);
-
-	}
-
-	private void renderPause(GameContainer gc, Graphics g)
-			throws SlickException {
-		// draw the background image
-		spacebackground.draw(0, 0);
-		// set the text color to white
-		g.setColor(Color.white);
-		// draw the pause screen text
-		font.drawString(gc.getWidth() / 2 - pausedMessageWidth / 2,
-				gc.getHeight() / 2, pausedMessage);
-	}
-
-	private void renderMenu(GameContainer gc, Graphics g) throws SlickException {
-		// draw the background image
-		spacebackground.draw(0, 0);
-		// set the text color to white
-		g.setColor(Color.white);
-		// Draw the title, start option, and high score text
-		font.drawString(SCREEN_W / 2 - titleWidth / 2, SCREEN_H / 2 - 100,
-				title);
-		font.drawString(SCREEN_W / 2 - startFromMenuWidth / 2, SCREEN_H / 2,
-				startFromMenu);
-		font.drawString(SCREEN_W / 2 - highScoreMessageWidth / 2, 480,
-				highScoreMessage);
-
-	}
-
-	private void renderGame(GameContainer gc, Graphics g) throws SlickException {
-		// draw the background
-		spacebackground.draw(0, 0);
-		// Draw the level number
-		font.drawString(0, 0, "Level : " + level);
-		// green for laser
-		g.setColor(Color.green);
-		playerImage.draw(playerX, playerY);
-		// Diagnostics for Bounding Box
-		if (diagnostics) {
-			// Draw bounding boxes
-			g.drawRect(player.body.left, player.body.bottom, player.body.width,
-					player.body.height);
-			g.drawRect(player.wings.left, player.wings.bottom,
-					player.wings.width, player.wings.height);
-		}
-		// draw the laser if firing
-		if (laserFiring) {
-			g.fillRect(playerX, 0, LASER_W, SCREEN_H - (SCREEN_H - playerY));
-
-		}
-		// go through all the enemy planes
-		for (Plane plane : game.planes()) {
-			// draw the planes in their current positions
-			enemyImage.draw(plane.x, plane.y);
-			// Diagnostics for Bounding Box
-			if (diagnostics) {
-				// Draw bounding boxes
-				g.drawRect(plane.body.left, plane.body.bottom,
-						plane.body.width, plane.body.height);
-				g.drawRect(plane.wings.left, plane.wings.bottom,
-						plane.wings.width, plane.wings.height);
-			}
-		}
-		// draw the countdown number
-		if ((resuming || gameOver) && countdown) {
-			font.drawString(SCREEN_W / 2 - countdownTimeWidth / 2,
-					SCREEN_H / 3, countdownTime);
-		}
-		// if there is enough energy to shoot laser, make the laser
-		// energy bar green
-		if (laser.getEnergy() > 20) {
-			g.setColor(Color.green);
-		} else { // red for not enough energy
-			g.setColor(Color.red);
-		}
-		// draw the energy bar for laser
-		g.fillRect(0, SCREEN_H - 50, laser.getEnergy() * 3, 50);
-		// game over message
-		if (gameOver && gameOverMessage != null) {
-			font.drawString(SCREEN_W / 2 - gameOverMessageWidth / 2,
-					SCREEN_H / 2, gameOverMessage);
-		} else { // draw the current score and the option to pause
-			font.drawString(SCREEN_W / 2 - inGameOptionsWidth / 2, 0,
-					inGameOptions);
-		}
 	}
 
 	@Override
@@ -297,7 +196,7 @@ public class Avoid extends BasicGame implements KeyListener {
 	}
 
 	// Levels up the game
-	public void levelUp() {
+	private void levelUp() {
 		level++;
 		// every level requires a higher score threshhold score to advance
 		threshold += level * 150;
@@ -309,14 +208,26 @@ public class Avoid extends BasicGame implements KeyListener {
 	}
 
 	// resets the levels back to 1
-	public void resetLevels() {
+	private void resetLevels() {
 		level = 1;
 		threshold = 200;
 	}
 
+	// creates a new game
+	private void reset() {
+		game = new Game(level, enemyWidth, enemyHeight);
+		resetLevels();
+		laserFiring = false;
+		laser.resetEnergy();
+		// reset the text to indicate 0 score
+		// (used for width to center text)
+		inGameOptions = "Score: 0 <Space> for Pause";
+		inGameOptionsWidth = font.getWidth(inGameOptions);
+	}
+
 	// Resume/Start Game Countdown==========================
 	// the countdown by setting a reference timepoint
-	public void startCountdown() {
+	private void startCountdown() {
 		// get the current time in milliseconds for reference use
 		curPauseTime = System.currentTimeMillis() / 1000;
 		// this tells the program to start counting
@@ -324,7 +235,7 @@ public class Avoid extends BasicGame implements KeyListener {
 	}
 
 	// checks the number of seconds left until game starts
-	public void countDown() {
+	private void countDown() {
 		// how many seconds left from 3 second countdown
 		long timeRemaining = 3 - (System.currentTimeMillis() / 1000 - curPauseTime);
 		// updates the countdown time string to render
@@ -347,13 +258,13 @@ public class Avoid extends BasicGame implements KeyListener {
 
 	// Laser Countdown=======================================
 	// starts the countdown by setting a reference time point
-	public void startLaserCountdown() {
+	private void startLaserCountdown() {
 		// get the current time in milliseconds for reference use
 		curLaserTime = System.currentTimeMillis();
 	}
 
 	// this manages the laser/every 10 ms depletes the laser by the set amount
-	public void laserCount() {
+	private void laserCount() {
 		// the number of seconds since you last fired the laser
 		long laserElapsedTime = System.currentTimeMillis() - curLaserTime;
 		// laser is depleted, stop firing
@@ -370,83 +281,106 @@ public class Avoid extends BasicGame implements KeyListener {
 		}
 	}
 
-	// creates a new game
-	public void reset() {
-		game = new Game(level, enemyWidth, enemyHeight);
-		resetLevels();
-		laserFiring = false;
-		laser.resetEnergy();
-		// reset the text to indicate 0 score
-		// (used for width to center text)
-		inGameOptions = "Score: 0 <Space> for Pause";
-		inGameOptionsWidth = font.getWidth(inGameOptions);
+	private void renderPause(GameContainer gc, Graphics g)
+			throws SlickException {
+		// draw the background image
+		spacebackground.draw(0, 0);
+		// set the text color to white
+		g.setColor(Color.white);
+		// draw the pause screen text
+		font.drawString(gc.getWidth() / 2 - pausedMessageWidth / 2,
+				gc.getHeight() / 2, pausedMessage);
+	}
+
+	private void renderMenu(GameContainer gc, Graphics g) throws SlickException {
+		// draw the background image
+		spacebackground.draw(0, 0);
+		// set the text color to white
+		g.setColor(Color.white);
+		// Draw the title, start option, and high score text
+		font.drawString(SCREEN_W / 2 - titleWidth / 2, SCREEN_H / 2 - 100,
+				title);
+		font.drawString(SCREEN_W / 2 - startFromMenuWidth / 2, SCREEN_H / 2,
+				startFromMenu);
+		font.drawString(SCREEN_W / 2 - highScoreMessageWidth / 2, 480,
+				highScoreMessage);
+
+	}
+
+	private void renderGame(GameContainer gc, Graphics g) throws SlickException {
+		// draw the background
+		spacebackground.draw(0, 0);
+		// Draw the level number
+		font.drawString(0, 0, "Level : " + level);
+		// green for laser
+		g.setColor(Color.green);
+		playerImage.draw(playerX, playerY);
+		// Diagnostics for Bounding Box
+		if (diagnostics) {
+			// Draw bounding boxes
+			g.drawRect(player.body.left, player.body.bottom, player.body.width,
+					player.body.height);
+			g.drawRect(player.wings.left, player.wings.bottom,
+					player.wings.width, player.wings.height);
+		}
+		// draw the laser if firing
+		if (laserFiring) {
+			g.fillRect(playerX, 0, LASER_W, SCREEN_H - (SCREEN_H - playerY));
+
+		}
+		// go through all the enemy planes
+		for (Plane plane : game.planes()) {
+			// draw the planes in their current positions
+			enemyImage.draw(plane.x, plane.y);
+			// Diagnostics for Bounding Box
+			if (diagnostics) {
+				// Draw bounding boxes
+				g.drawRect(plane.body.left, plane.body.bottom,
+						plane.body.width, plane.body.height);
+				g.drawRect(plane.wings.left, plane.wings.bottom,
+						plane.wings.width, plane.wings.height);
+			}
+		}
+		// draw the countdown number
+		if ((resuming || gameOver) && countdown) {
+			font.drawString(SCREEN_W / 2 - countdownTimeWidth / 2,
+					SCREEN_H / 3, countdownTime);
+		}
+		// if there is enough energy to shoot laser, make the laser
+		// energy bar green
+		if (laser.canFire()) {
+			g.setColor(Color.green);
+		} else { // red for not enough energy
+			g.setColor(Color.red);
+		}
+		// draw the energy bar for laser
+		g.fillRect(0, SCREEN_H - 50, laser.getEnergy() * 3, 50);
+		// game over message
+		if (gameOver && gameOverMessage != null) {
+			font.drawString(SCREEN_W / 2 - gameOverMessageWidth / 2,
+					SCREEN_H / 2, gameOverMessage);
+		} else { // draw the current score and the option to pause
+			font.drawString(SCREEN_W / 2 - inGameOptionsWidth / 2, 0,
+					inGameOptions);
+		}
 	}
 
 	@Override
-	public void update(GameContainer gc, int delta) throws SlickException {
-		// if you are in a game and you are resuming/starting a new game after
-		// game over, count down to when the game start
-		if (inGame && (gameOver || resuming) && countdown) {
-			countDown();
+	public void render(GameContainer gc, Graphics g) throws SlickException {
+		// Draw paused screen
+		if (paused) {
+			renderPause(gc, g);
 		}
-		if (!gameOver && inGame && !paused) {
-			// manages the laser depletion
-			if (laserFiring) {
-				laserCount();
-			} else { // regenerate the laser if laser not firing
-				laser.regen();
-			}
-			// Mouse control
-			if (mouse) {
-				// Get the mouse input
-				Input g = gc.getInput();
-				// Get the x and y coordinates of the mouse
-				int x = g.getMouseX();
-				int y = g.getMouseY();
-				// move the player plane
-				movePlayer(x, y);
-				// Triggers the laser
-				if (g.isMouseButtonDown(Input.MOUSE_LEFT_BUTTON)) {
-					shootLaser();
-				} else { // Stops the laser if mouse not pressed
-					stopShootLaser();
-				}
-
-			}
-
-			// Move enemy planes (the parameters wont do anything if
-			// no lasers are firing (laserFiring == false)
-			game.movePlanes(laserFiring, playerX, LASER_W, SCREEN_H
-					- (SCREEN_H - playerY));
-
-			// Update the score text and its width
-			inGameOptions = "Score: " + game.getScore() + "<Space> for Pause";
-			inGameOptionsWidth = font.getWidth(inGameOptions);
-			// Check for level up
-			if (game.getScore() > threshold) {
-				levelUp();
-			}
-			// Check for loss
-			if (game.checkLose(player)) {
-				// set game over to be true to stop the game
-				gameOver = true;
-				// If you have broken a high score, update it (stored
-				// persistently)
-				int curHighScore = prefs.getInt(highScoreKey, 0);
-				int curGameScore = game.getScore();
-				if (curGameScore > curHighScore) {
-					prefs.putInt(highScoreKey, curGameScore);
-					highScoreMessage = "High Score: "
-							+ prefs.getInt(highScoreKey, 0);
-					highScoreMessageWidth = font.getWidth(highScoreMessage);
-				}
-				// Update the game over text and its width
-				gameOverMessage = "Game Over. Score: " + game.getScore()
-						+ ".<Space> to restart and <Enter> to menu";
-				gameOverMessageWidth = font.getWidth(gameOverMessage);
-				// You are done, so just reutn
-			}
+		// Draw the game
+		else if (inGame) {
+			renderGame(gc, g);
 		}
+		// Draw the menu
+		else if (menu) {
+			renderMenu(gc, g);
+		}
+		// Limit to 60 fps
+		Display.sync(60);
 
 	}
 
@@ -492,12 +426,80 @@ public class Avoid extends BasicGame implements KeyListener {
 			break;
 
 		}
+		
+	}
+
+	@Override
+	public void update(GameContainer gc, int delta) throws SlickException {
+		// if you are in a game and you are resuming/starting a new game after
+		// game over, count down to when the game start
+		if (inGame && (gameOver || resuming) && countdown) {
+			countDown();
+		}
+		else if (!gameOver && inGame && !paused) {
+			// manages the laser depletion
+			if (laserFiring) {
+				laserCount();
+			} else { // regenerate the laser if laser not firing
+				laser.regen();
+			}
+			// Mouse control
+			if (mouse) {
+				// Get the mouse input
+				Input g = gc.getInput();
+				// Get the x and y coordinates of the mouse
+				int x = g.getMouseX();
+				int y = g.getMouseY();
+				// move the player plane
+				movePlayer(x, y);
+				// Triggers the laser
+				if (g.isMouseButtonDown(Input.MOUSE_LEFT_BUTTON)) {
+					shootLaser();
+				} else { // Stops the laser if mouse not pressed
+					stopShootLaser();
+				}
+
+			}
+			// Move enemy planes (the parameters wont do anything if
+			// no lasers are firing (laserFiring == false)
+			game.movePlanes(laserFiring, playerX, LASER_W, SCREEN_H
+					- (SCREEN_H - playerY));
+
+			// Update the score text and its width
+			inGameOptions = "Score: " + game.getScore() + "<Space> for Pause";
+			inGameOptionsWidth = font.getWidth(inGameOptions);
+			// Check for level up
+			if (game.getScore() > threshold) {
+				levelUp();
+			}
+			// Check for loss
+			if (game.checkLose(player)) {
+				// set game over to be true to stop the game
+				gameOver = true;
+				// If you have broken a high score, update it (stored
+				// persistently)
+				int curHighScore = prefs.getInt(highScoreKey, 0);
+				int curGameScore = game.getScore();
+				if (curGameScore > curHighScore) {
+					prefs.putInt(highScoreKey, curGameScore);
+					highScoreMessage = "High Score: "
+							+ prefs.getInt(highScoreKey, 0);
+					highScoreMessageWidth = font.getWidth(highScoreMessage);
+				}
+				// Update the game over text and its width
+				gameOverMessage = "Game Over. Score: " + game.getScore()
+						+ ".<Space> to restart and <Enter> to menu";
+				gameOverMessageWidth = font.getWidth(gameOverMessage);
+				// You are done, so just reutn
+			}
+		}
 
 	}
 
 	public static void main(String[] args) throws SlickException {
 		// Creates a new game
-		AppGameContainer app = new AppGameContainer(new Avoid("Avoid Game"));
+		AppGameContainer app = new AppGameContainer(new Avoid("Avoid Game",
+				false, false));
 		// set the dimensions of the game
 		app.setDisplayMode(1280, 768, false);
 		// don't show the diagnostic FPS

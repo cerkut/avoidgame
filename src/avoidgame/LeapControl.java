@@ -9,23 +9,14 @@ package avoidgame;
  \******************************************************************************/
 
 import java.io.IOException;
-
 import org.newdawn.slick.AppGameContainer;
 import org.newdawn.slick.SlickException;
-
-import com.leapmotion.leap.CircleGesture;
 import com.leapmotion.leap.Controller;
 import com.leapmotion.leap.Finger;
 import com.leapmotion.leap.FingerList;
 import com.leapmotion.leap.Frame;
-import com.leapmotion.leap.Gesture;
-import com.leapmotion.leap.Gesture.State;
-import com.leapmotion.leap.GestureList;
 import com.leapmotion.leap.Hand;
-import com.leapmotion.leap.KeyTapGesture;
 import com.leapmotion.leap.Listener;
-import com.leapmotion.leap.ScreenTapGesture;
-import com.leapmotion.leap.SwipeGesture;
 import com.leapmotion.leap.Vector;
 
 class SampleListener extends Listener {
@@ -43,7 +34,6 @@ class SampleListener extends Listener {
 	}
 
 	public void onConnect(Controller controller) {
-		controller.enableGesture(Gesture.Type.TYPE_SCREEN_TAP);
 		System.out.println("Connected");
 
 	}
@@ -70,20 +60,27 @@ class SampleListener extends Listener {
 				// Calculate the hand's average finger tip position
 				Vector avgPos = Vector.zero();
 				for (Finger finger : fingers) {
+					// add the position vectors up for each finger
 					avgPos = avgPos.plus(finger.tipPosition());
 				}
-
+				// divide the position vectors by the number of fingers
 				avgPos = avgPos.divide(fingers.count());
-
+				// scale the x position to the game resolution
 				float x = ((float) avgPos.getX() + 100) * 6;
+				// scale the y position to the game resolution
 				float y = 1000 - (3f * (float) avgPos.getY());
+				// z-axis value for the laser
 				float z = (float) avgPos.getZ();
 
 				if (!myGame.gameOver) {
+					// move the player to the position
 					myGame.movePlayer(x, y);
+					// if you lean your hand forward enough,
+					// this will shoot the laser
 					if (z <= -120) {
 						myGame.shootLaser();
-					} else {
+					} else { // stop shooting the laser if the hand does
+							 // not goin far enough
 						myGame.stopShootLaser();
 					}
 				}
@@ -98,7 +95,8 @@ class LeapControl {
 	public static void main(String[] args) throws SlickException {
 
 		// Create a sample listener and controller
-		SampleListener listener = new SampleListener(new Avoid("Avoid Game"));
+		SampleListener listener = new SampleListener(new Avoid("Avoid Game",
+				true, false));
 		Controller controller = new Controller();
 		// Have the sample listener receive events from the controller
 		controller.addListener(listener);
@@ -112,7 +110,6 @@ class LeapControl {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 		// Remove the sample listener when done
 		controller.removeListener(listener);
 	}
